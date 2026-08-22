@@ -17,11 +17,11 @@ app.post("/api/obfuscate", (req, res) => {
     if (req.body && req.body.antiTamper === false) opts.antiTamper = false;
     if (!String(code).trim()) return res.status(400).json({ success: false, error: "code required" });
     const result = obfuscate(code, opts);
-    res.json({ success: true, code: result.code, stats: result.stats, brand: "QyrexObf v4" });
+    res.json({ success: true, code: result.code, stats: result.stats, brand: "QyrexObf v5" });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message || "fail" });
   }
 });
 
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
-app.listen(PORT, "0.0.0.0", () => console.log("QyrexObf v4 on", PORT));
+app.listen(PORT, "0.0.0.0", () => console.log("QyrexObf v5 on", PORT));
