@@ -1,27 +1,389 @@
 <!DOCTYPE html>
-<html lang="es"><head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>QyrexObf</title>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QyrexObf — Lua Obfuscator</title>
+<meta name="description" content="Ofuscador profesional de código Lua con protección anti-tamper." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{background:#0a0a0f;color:#e4e4ed;font-family:system-ui,sans-serif;margin:0;padding:24px}
-textarea{width:100%;min-height:200px;background:#111118;border:1px solid #252533;border-radius:12px;color:#e4e4ed;padding:12px;font-family:monospace;font-size:12px}
-button{background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer}
-</style></head>
-<body class="max-w-3xl mx-auto">
-<h1 class="text-xl font-bold mb-4">QyrexObf</h1>
-<textarea id="src" placeholder="Lua code..."></textarea>
-<div class="my-3 flex gap-3 items-center">
-<label class="text-sm"><input type="checkbox" id="anti" checked/> Anti-tamper</label>
-<button onclick="run()">Ofuscar</button>
+  :root{
+    --bg:#07070c;
+    --panel:#0d0d15;
+    --panel-2:#111120;
+    --border:#1e1e2e;
+    --border-strong:#2a2a40;
+    --text:#e7e7f0;
+    --muted:#8a8aa3;
+    --violet:#8b5cf6;
+    --violet-2:#a78bfa;
+    --cyan:#22d3ee;
+    --pink:#ec4899;
+    --green:#10b981;
+    --red:#f43f5e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  /* Animated aurora background */
+  .aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;
+    background:
+      radial-gradient(1200px 700px at 50% -10%,rgba(139,92,246,.20),transparent 65%),
+      radial-gradient(900px 600px at 90% 110%,rgba(34,211,238,.16),transparent 65%),
+      radial-gradient(700px 500px at 5% 90%,rgba(236,72,153,.12),transparent 65%),
+      linear-gradient(180deg,#07070c 0%,#090912 55%,#07070c 100%);
+  }
+  .aurora::before,.aurora::after{
+    content:"";position:absolute;width:60vmax;height:60vmax;border-radius:50%;
+    filter:blur(130px);opacity:.32;
+    background:radial-gradient(circle at 30% 30%,#8b5cf6,transparent 60%);
+    animation:float 18s ease-in-out infinite;
+  }
+  .aurora::before{top:-22vmax;left:-16vmax}
+  .aurora::after{
+    bottom:-26vmax;right:-16vmax;
+    background:radial-gradient(circle at 60% 40%,#22d3ee,transparent 60%);
+    animation-duration:24s;animation-direction:reverse;opacity:.26;
+  }
+  .glow-orb{
+    position:fixed;z-index:-2;pointer-events:none;left:50%;top:35%;
+    width:46vmax;height:46vmax;transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle,rgba(236,72,153,.16),transparent 62%);
+    filter:blur(120px);animation:float 28s ease-in-out infinite;
+  }
+  .grid-bg{
+    position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse 90% 70% at 50% 15%,#000 0%,transparent 80%);
+  }
+  .vignette{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 0%,transparent 45%,rgba(0,0,0,.55) 100%);
+  }
+  @keyframes float{
+    0%,100%{transform:translate(0,0) scale(1)}
+    50%{transform:translate(4vmax,-3vmax) scale(1.1)}
+  }
+  .glass{
+    background:linear-gradient(180deg,rgba(20,20,32,.75),rgba(13,13,22,.85));
+    border:1px solid var(--border);
+    backdrop-filter:blur(14px);
+  }
+  .card-glow{
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.04) inset,
+      0 30px 80px -20px rgba(139,92,246,.25),
+      0 0 0 1px rgba(139,92,246,.08);
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 50%,#22d3ee 100%);
+    background-size:200% 200%;
+    transition:all .35s ease;
+    box-shadow:0 10px 30px -8px rgba(139,92,246,.55);
+  }
+  .btn-primary:hover{background-position:100% 0;transform:translateY(-1px);box-shadow:0 16px 40px -10px rgba(139,92,246,.75)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-ghost{border:1px solid var(--border-strong);background:rgba(255,255,255,.02);transition:all .2s}
+  .btn-ghost:hover{background:rgba(255,255,255,.05);border-color:#3a3a55}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
+    background:rgba(139,92,246,.12);color:#c4b5fd;border:1px solid rgba(139,92,246,.3);
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .code-area{
+    width:100%;height:340px;resize:vertical;
+    background:#08080f;border:1px solid var(--border);border-radius:14px;
+    color:#e7e7f0;padding:18px 18px 18px 56px;
+    font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;
+    outline:none;transition:border-color .2s, box-shadow .2s;
+    background-image:linear-gradient(180deg,transparent 0,transparent 100%);
+  }
+  .code-wrap{position:relative}
+  .code-wrap::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:44px;
+    background:#0a0a12;border-right:1px solid var(--border);border-radius:14px 0 0 14px;
+    pointer-events:none;
+  }
+  .code-area:focus{border-color:var(--violet);box-shadow:0 0 0 4px rgba(139,92,246,.15)}
+  .toggle{position:relative;width:38px;height:22px;background:#1a1a2a;border-radius:999px;border:1px solid var(--border-strong);cursor:pointer;transition:all .2s;flex-shrink:0}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#8a8aa3;transition:all .25s}
+  .toggle.on{background:linear-gradient(135deg,#8b5cf6,#6366f1);border-color:transparent}
+  .toggle.on::after{left:18px;background:#fff}
+  .stat{padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--panel-2)}
+  .stat .n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#fff}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#10101c;border:1px solid var(--border-strong);color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;
+    opacity:0;transition:all .3s;pointer-events:none;z-index:50;
+    box-shadow:0 20px 50px -10px rgba(0,0,0,.6);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.ok{border-color:rgba(16,185,129,.4)}
+  .toast.err{border-color:rgba(244,63,94,.4)}
+  .feature-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(34,211,238,.1));border:1px solid rgba(139,92,246,.25)}
+  .logo-mark{
+    width:36px;height:36px;border-radius:10px;
+    background:conic-gradient(from 180deg,#8b5cf6,#22d3ee,#ec4899,#8b5cf6);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 24px -6px rgba(139,92,246,.6);
+  }
+  .logo-mark span{
+    width:28px;height:28px;background:#07070c;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono';font-weight:700;color:#fff;font-size:14px;
+  }
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-strong),transparent)}
+  select,input[type=range]{accent-color:var(--violet)}
+  .select{
+    background:#0a0a12;border:1px solid var(--border-strong);border-radius:10px;
+    padding:8px 34px 8px 12px;color:#fff;font-size:13px;font-weight:500;
+    appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8aa3' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;
+  }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:#08080f}
+  ::-webkit-scrollbar-thumb{background:#1e1e2e;border-radius:10px;border:2px solid #08080f}
+  ::-webkit-scrollbar-thumb:hover{background:#2a2a40}
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="glow-orb"></div>
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+
+<div class="min-h-screen">
+  <!-- NAV -->
+  <header class="max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="logo-mark"><span>Q</span></div>
+      <div>
+        <div class="font-bold tracking-tight text-[15px]">QyrexObf</div>
+        <div class="text-[11px] text-[color:var(--muted)] -mt-0.5">Lua Protection Suite</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="https://github.com" target="_blank" class="btn-ghost px-3 py-2 rounded-lg text-sm font-medium hidden sm:inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.05c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.07 0 0 .97-.31 3.18 1.18a11 11 0 015.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.6.23 2.78.12 3.07.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.35.77 1.05.77 2.12v3.14c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="max-w-6xl mx-auto px-6 pt-16 pb-10 text-center">
+    <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.05]">
+      Ofusca tu Lua con<br/>
+      <span style="background:linear-gradient(90deg,#a78bfa,#22d3ee,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent">protección de nivel profesional</span>
+    </h1>
+    <p class="mt-5 text-[color:var(--muted)] text-lg max-w-2xl mx-auto">
+      Cifrado de cadenas, renombrado de variables, ofuscación del flujo de control y anti-tamper — todo en una sola pasada.
+    </p>
+  </section>
+
+  <!-- STATS -->
+  <section class="max-w-6xl mx-auto px-6 pb-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="stat"><div class="n" id="statIn">0</div><div class="l">Bytes de entrada</div></div>
+    <div class="stat"><div class="n" id="statOut">0</div><div class="l">Bytes de salida</div></div>
+    <div class="stat"><div class="n" id="statRatio">—</div><div class="l">Factor de expansión</div></div>
+    <div class="stat"><div class="n" id="statTime">—</div><div class="l">Tiempo de ejecución</div></div>
+  </section>
+
+  <!-- MAIN CARD -->
+  <main class="max-w-6xl mx-auto px-6 pb-10">
+    <div class="glass card-glow rounded-2xl p-6 sm:p-8">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- INPUT -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div class="feature-icon" style="width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <span class="text-sm font-semibold">Código fuente</span>
+              <span class="mono text-[11px] text-[color:var(--muted)]">.lua</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnPaste" class="btn-ghost text-xs px-2.5 py-1.5 rounded-md font-medium">Pegar</button>
+              <button id="btnClear" class="btn-ghost text-xs px-2.5 py-1.5 rounded-md font-medium">Limpiar</button>
+            </div>
+          </div>
+          <div class="code-wrap">
+            <textarea id="src" spellcheck="false" class="code-area" placeholder="-- Pega tu código Lua aquí&#10;local function saludo(nombre)&#10;    print('Hola, ' .. nombre)&#10;end&#10;&#10;saludo('mundo')"></textarea>
+          </div>
+        </div>
+
+        <!-- OUTPUT -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div class="feature-icon" style="width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <span class="text-sm font-semibold">Salida ofuscada</span>
+              <span class="mono text-[11px] text-[color:var(--muted)]">protected</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnCopy" class="btn-ghost text-xs px-2.5 py-1.5 rounded-md font-medium">Copiar</button>
+              <button id="btnDownload" class="btn-ghost text-xs px-2.5 py-1.5 rounded-md font-medium">Descargar</button>
+            </div>
+          </div>
+          <div class="code-wrap">
+            <textarea id="out" readonly spellcheck="false" class="code-area" placeholder="-- Tu salida ofuscada aparecerá aquí"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider my-7"></div>
+
+      <!-- CONTROLS -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-5">
+          <label class="flex items-center gap-3 cursor-pointer select-none" id="antiWrap">
+            <div class="toggle on" id="antiToggle"></div>
+            <div>
+              <div class="text-sm font-medium">Anti-tamper</div>
+              <div class="text-[11px] text-[color:var(--muted)]">Detecta ejecutores y entornos sospechosos</div>
+            </div>
+          </label>
+          <div class="hidden sm:block w-px h-10 bg-[color:var(--border-strong)]"></div>
+          <label class="flex items-center gap-2 text-sm">
+            <span class="text-[color:var(--muted)]">Nivel:</span>
+            <select id="level" class="select">
+              <option value="1">Ligero</option>
+              <option value="2" selected>Balanceado</option>
+              <option value="3">Máximo</option>
+            </select>
+          </label>
+        </div>
+        <button id="btnRun" class="btn-primary text-white font-semibold px-7 py-3 rounded-xl inline-flex items-center gap-2">
+          <svg id="runIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <span id="runLabel">Ofuscar código</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+      <div class="glass rounded-xl p-5">
+        <div class="feature-icon mb-3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="font-semibold text-sm">String encryption</div>
+        <div class="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">Codifica todas las cadenas de tu script con XOR + clave dinámica.</div>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <div class="feature-icon mb-3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+        <div class="font-semibold text-sm">Rename locals</div>
+        <div class="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">Sustituye las variables por identificadores irrastreables.</div>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <div class="feature-icon mb-3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></div>
+        <div class="font-semibold text-sm">Control flow</div>
+        <div class="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">Inyecta ramas falsas y reordena el flujo de ejecución.</div>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <div class="feature-icon mb-3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="font-semibold text-sm">Anti-tamper</div>
+        <div class="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">Bloquea hooks, entornos sospechosos y herramientas de depuración.</div>
+      </div>
+    </section>
+
+    <footer class="mt-10 pb-8 text-center text-xs text-[color:var(--muted)]">
+      © <span id="yr"></span> QyrexObf · Hecho para desarrolladores Lua
+    </footer>
+  </main>
 </div>
-<textarea id="out" readonly></textarea>
+
+<div id="toast" class="toast"></div>
+
 <script>
-async function run(){
-  const r=await fetch('/api/obfuscate',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({code:src.value,antiTamper:anti.checked})});
-  const d=await r.json();
-  out.value=d.success?d.code:(d.error||'error');
-}
+  const $ = (id) => document.getElementById(id);
+  $('yr').textContent = new Date().getFullYear();
+
+  // Toggle
+  const antiToggle = $('antiToggle');
+  $('antiWrap').addEventListener('click', () => antiToggle.classList.toggle('on'));
+
+  // Toast
+  function toast(msg, type='ok'){
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type === 'err' ? 'err' : 'ok');
+    clearTimeout(window.__tt);
+    window.__tt = setTimeout(() => t.className = 'toast', 2200);
+  }
+
+  // Stats
+  function fmtBytes(n){
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/1048576).toFixed(2) + ' MB';
+  }
+  function updateStats(inLen, outLen, ms){
+    $('statIn').textContent  = fmtBytes(inLen);
+    $('statOut').textContent = outLen ? fmtBytes(outLen) : '0';
+    $('statRatio').textContent = (inLen && outLen) ? (outLen/inLen).toFixed(2) + '×' : '—';
+    $('statTime').textContent  = ms != null ? ms + ' ms' : '—';
+  }
+  $('src').addEventListener('input', () => updateStats($('src').value.length, $('out').value.length, null));
+
+  // Actions
+  $('btnClear').addEventListener('click', () => { $('src').value=''; $('out').value=''; updateStats(0,0,null); });
+  $('btnPaste').addEventListener('click', async () => {
+    try { $('src').value = await navigator.clipboard.readText(); updateStats($('src').value.length, 0, null); toast('Pegado desde el portapapeles'); }
+    catch { toast('Sin acceso al portapapeles','err'); }
+  });
+  $('btnCopy').addEventListener('click', async () => {
+    if(!$('out').value) return toast('Nada para copiar','err');
+    try { await navigator.clipboard.writeText($('out').value); toast('Copiado ✓'); }
+    catch { toast('Error al copiar','err'); }
+  });
+  $('btnDownload').addEventListener('click', () => {
+    if(!$('out').value) return toast('Nada para descargar','err');
+    const blob = new Blob([$('out').value], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'qyrexobf_output.lua'; a.click();
+    URL.revokeObjectURL(url);
+    toast('Archivo descargado ✓');
+  });
+
+  // Run
+  $('btnRun').addEventListener('click', async () => {
+    const code = $('src').value;
+    if(!code.trim()) return toast('Introduce algún código Lua','err');
+    const label = $('runLabel');
+    label.textContent = 'Procesando...';
+    const t0 = performance.now();
+    try {
+      const r = await fetch('/api/obfuscate', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ code, antiTamper: antiToggle.classList.contains('on') })
+      });
+      const d = await r.json();
+      const ms = Math.round(performance.now() - t0);
+      if(d.success){
+        $('out').value = d.code;
+        updateStats(code.length, d.code.length, ms);
+        toast('Ofuscación completada ✓');
+      } else {
+        toast(d.error || 'Error en la ofuscación','err');
+      }
+    } catch(e) {
+      toast('Error de conexión con el servidor','err');
+    } finally {
+      label.textContent = 'Ofuscar código';
+    }
+  });
 </script>
-</body></html>
+</body>
+</html>
