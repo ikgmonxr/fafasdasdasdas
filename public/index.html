@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QyrexObf</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#0a0a0f;color:#e4e4ed;font-family:system-ui,sans-serif;margin:0;padding:24px}
+textarea{width:100%;min-height:200px;background:#111118;border:1px solid #252533;border-radius:12px;color:#e4e4ed;padding:12px;font-family:monospace;font-size:12px}
+button{background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer}
+</style></head>
+<body class="max-w-3xl mx-auto">
+<h1 class="text-xl font-bold mb-4">QyrexObf</h1>
+<textarea id="src" placeholder="Lua code..."></textarea>
+<div class="my-3 flex gap-3 items-center">
+<label class="text-sm"><input type="checkbox" id="anti" checked/> Anti-tamper</label>
+<button onclick="run()">Ofuscar</button>
+</div>
+<textarea id="out" readonly></textarea>
+<script>
+async function run(){
+  const r=await fetch('/api/obfuscate',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code:src.value,antiTamper:anti.checked})});
+  const d=await r.json();
+  out.value=d.success?d.code:(d.error||'error');
+}
+</script>
+</body></html>
