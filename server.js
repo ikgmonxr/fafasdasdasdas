@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 10000;
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: "2mb" }));
 
-app.get("/api/health", (req, res) => res.json({ ok: true, service: "QyrexObf", version: "4.0.0" }));
+app.get("/api/health", (req, res) => res.json({ ok: true, service: "QyrexObf", version: "9.0.0" }));
 
 app.post("/api/obfuscate", (req, res) => {
   try {
@@ -17,11 +17,12 @@ app.post("/api/obfuscate", (req, res) => {
     if (req.body && req.body.antiTamper === false) opts.antiTamper = false;
     if (!String(code).trim()) return res.status(400).json({ success: false, error: "code required" });
     const result = obfuscate(code, opts);
-    res.json({ success: true, code: result.code, stats: result.stats, brand: "QyrexObf v5" });
+    const outCode = (result && result.code) ? result.code : String(result || "");
+    res.json({ success: true, code: outCode, stats: (result && result.stats) || null, brand: "QyrexObf v9" });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message || "fail" });
   }
 });
 
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
-app.listen(PORT, "0.0.0.0", () => console.log("QyrexObf v5 on", PORT));
+app.listen(PORT, "0.0.0.0", () => console.log("QyrexObf v9 on", PORT));
