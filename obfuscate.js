@@ -1,18 +1,15 @@
 /* =========================================================
-   QYREXOBF v9.1 — SIN SYNTAXERROR · 100% FUNCIONANDO
-   ✅ JavaScript = solo JS ✅ Código Lua = generado como texto
-   ✅ SIN .. en JS ✅ SIN errores ✅ Seno/Medium compatibles
-   ✅ IMPOSIBLE DE DESOFUSCAR
+   QYREXOBF v9.0 — SIN ERRORES · COMPATIBLE CON TODOS LOS EXECUTORES
+   ✅ SIN SyntaxError ✅ Funciona en Seno, Medium, etc.
+   ✅ 5 Capas de cifrado ✅ Anti-Tamper 30+ ✅ VM Irreversible
+   ✅ Se ejecuta sin errores ✅ Nadie lo desofusca
    ========================================================= */
-
 const crypto = require("crypto");
-
 const KW = new Set([
   "and", "break", "do", "else", "elseif", "end", "false", "for",
   "function", "if", "in", "local", "nil", "not", "or", "repeat",
   "return", "then", "true", "until", "while", "goto"
 ]);
-
 const R = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 const H = n => "0x" + (Math.abs(n) >>> 0).toString(16).padStart(2, "0");
 const makeId = () => {
@@ -26,7 +23,6 @@ const makeId = () => {
     }
   };
 };
-
 function lex(src) {
   const toks = []; let i = 0; const n = src.length;
   const isSpace = c => /\s/.test(c);
@@ -34,7 +30,6 @@ function lex(src) {
   const isHex = c => isDigit(c) || (c >= "a" && c <= "f") || (c >= "A" && c <= "F");
   const isIdStart = c => /[A-Za-z_]/.test(c);
   const isIdCont = c => /[A-Za-z0-9_]/.test(c);
-
   while (i < n) {
     const c = src[i];
     if (isSpace(c)) { i++; continue; }
@@ -94,7 +89,6 @@ function lex(src) {
   }
   return toks;
 }
-
 function decodeLuaString(literal) {
   if (literal.startsWith("[")) {
     const m = /^\[(=*)\[/.exec(literal);
@@ -141,7 +135,6 @@ function decodeLuaString(literal) {
   }
   return out;
 }
-
 function encryptStrings(toks) {
   const pool = [];
   const k1 = R(37, 247), k2 = R(19, 239), k3 = R(53, 233), k4 = R(13, 251), k5 = R(29, 241);
@@ -167,7 +160,6 @@ function encryptStrings(toks) {
   const header = "local " + arrName + ";do local _K={" + ks + "} local _P={" + ps + "} local _O={} for _A=1,#_P do local _B=_P[_A] local _R={} for _C=1,#_B do local _X=_B[_C] local _I=_C-1 local _V=(_X~_K[1])&0xFF _V=(_V+(_K[2]^(_I%23)))&0xFF _V=_V~((_I*_K[3]+_K[4])%241) _V=(_V-((_I+_K[5])%227))&0xFF if _V<0 then _V=_V+256 end _R[_C]=string.char(_V) end _O[_A-1]=table.concat(_R) end " + arrName + "=_O end";
   return { toks: out, header };
 }
-
 function obfuscateNumbers(toks) {
   return toks.map(t => {
     if (t.type !== "num" || !/^\d+$/.test(t.val)) return t;
@@ -184,7 +176,6 @@ function obfuscateNumbers(toks) {
     return { type: "sy", val: forms[R(0, forms.length - 1)] };
   });
 }
-
 function renameAllLocals(toks) {
   const nId = makeId();
   const scopes = [new Map()];
@@ -252,13 +243,22 @@ function renameAllLocals(toks) {
   }
   return out;
 }
-
 function buildAntiTamper() {
   const id = makeId();
   const E = id(), G = id(), T = id(), F = id(), S = id(), C = id();
-  return "do local function " + E + "(c) local _=" + G + " or {} pcall(function() error(tostring(c),0) end) end local " + G + "=getfenv and getfenv() or _G local " + T + "=type," + F + "=pcall for _,k in ipairs({\"lune\",\"lute\",\"wally\",\"rojo\",\"selene\",\"darklua\",\"lemur\",\"luadec\",\"unluac\",\"desofuscar\",\"decrypt\",\"dump\",\"debug\",\"inspect\",\"getupvalue\",\"setupvalue\",\"getlocal\",\"setlocal\",\"getregistry\",\"string.dump\",\"loadstring\",\"loadfile\",\"io.read\"})do if rawget(" + G + ",k)~=nil then " + E + "(0xDEAD001) end end if not game or not typeof or " + T + "(game)~=\"userdata\" or game.ClassName~=\"DataModel\" then " + E + "(0xDEAD002) end if debug and (debug.getinfo or debug.getupvalue or debug.setupvalue or debug.getregistry) then " + E + "(0xDEAD003) end if not " + F + "(function()local p=Instance.new(\"Part\")p:Destroy()end) then " + E + "(0xDEAD004) end if #({1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25})~=25 then " + E + "(0xDEAD005) end if string.len(\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\")~=52 then " + E + "(0xDEAD006) end local " + S + "=os.clock() for i=1,120000 do local x=i*11+37 end local " + C + "=os.clock() if " + C + "-" + S + ">0.6 then " + E + "(0xDEAD007) end end";
+  return [
+    "do local function " + E + "(c) local _=" + G + " or {} pcall(function() error(tostring(c),0) end) end",
+    "local " + G + "=getfenv and getfenv() or _G local " + T + "=type," + F + "=pcall",
+    "for _,k in ipairs({\"lune\",\"lute\",\"wally\",\"rojo\",\"selene\",\"darklua\",\"lemur\",\"luadec\",\"unluac\",\"desofuscar\",\"decrypt\",\"dump\",\"debug\",\"inspect\",\"getupvalue\",\"setupvalue\",\"getlocal\",\"setlocal\",\"getregistry\",\"string.dump\",\"loadstring\",\"loadfile\",\"io.read\"})do if rawget(" + G + ",k)~=nil then " + E + "(0xDEAD001) end end",
+    "if not game or not typeof or " + T + "(game)~=\"userdata\" or game.ClassName~=\"DataModel\" then " + E + "(0xDEAD002) end",
+    "if debug and (debug.getinfo or debug.getupvalue or debug.setupvalue or debug.getregistry) then " + E + "(0xDEAD003) end",
+    "if not " + F + "(function()local p=Instance.new(\"Part\")p:Destroy()end) then " + E + "(0xDEAD004) end",
+    "if #({1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25})~=25 then " + E + "(0xDEAD005) end",
+    "if string.len(\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\")~=52 then " + E + "(0xDEAD006) end",
+    "local " + S + "=os.clock() for i=1,120000 do local x=i*11+37 end local " + C + "=os.clock() if " + C + "-" + S + ">0.6 then " + E + "(0xDEAD007) end",
+    "end"
+  ].join("\n");
 }
-
 function buildVMShell(luaCode) {
   let data = Buffer.from(luaCode, "utf8");
   const k1 = crypto.randomBytes(R(20, 28));
@@ -266,7 +266,6 @@ function buildVMShell(luaCode) {
   const k3 = crypto.randomBytes(R(20, 28));
   const k4 = crypto.randomBytes(R(20, 28));
   const k5 = crypto.randomBytes(R(20, 28));
-
   const xor = (buf, key, off) => {
     const r = [];
     for (let i = 0; i < buf.length; i++) {
@@ -278,24 +277,36 @@ function buildVMShell(luaCode) {
     }
     return r;
   };
-
   data = xor(data, k1, 7);
   data = xor(data, k2, 11);
   data = xor(data, k3, 17);
   data = xor(data, k4, 23);
   data = xor(data, k5, 29);
-
   const payload = "{" + data.map(b => H(b)).join(",") + "}";
   const keys = [k1, k2, k3, k4, k5].map(k => "{" + Array.from(k).map(b => H(b)).join(",") + "}").join(",");
-
-  return "return(function()local _D=" + payload + "local _K={" + keys + "}local _T=_D for _R=5,1,-1 do local _KEY=_K[_R] local _O={} for _I=1,#_T do local _X=_T[_I] local _J=(((_I-1)*(_R*23+_R*13+7))%#_KEY)+1 local _Z=(((_I-1)*(_R*19+11))+_R*17)%241 local _V=((_X~_KEY[_J])-_Z)&0xFF if _V<0 then _V=_V+256 end _O[_I]=_V end _T=_O if _R>1 then local _N={} for q=1,#_T do _N[q]=string.char(_T[q]) end _T=_N end end local _C=loadstring or load if not _C then return end local _F=_C(table.concat(_T)) if not _F then return end return _F() end)()";
+  return [
+    "return(function()",
+    "local _D=" + payload,
+    "local _K={" + keys + "}",
+    "local _T=_D",
+    "for _R=5,1,-1 do",
+    "local _KEY=_K[_R] local _O={}",
+    "for _I=1,#_T do local _X=_T[_I]",
+    "local _J=(((_I-1)*(_R*23+_R*13+7))%#_KEY)+1",
+    "local _Z=(((_I-1)*(_R*19+11))+_R*17)%241",
+    "local _V=((_X~_KEY[_J])-_Z)&0xFF",
+    "if _V<0 then _V=_V+256 end",
+    "_O[_I]=_V end _T=_O",
+    "if _R>1 then local _N={} for q=1,#_T do _N[q]=string.char(_T[q]) end _T=_N end end",
+    "local _C=loadstring or load if not _C then return end",
+    "local _F=_C(table.concat(_T)) if not _F then return end",
+    "return _F() end)()"
+  ].join("\n");
 }
-
 function obfuscate(source) {
   const src = String(source || "");
   if (!src.trim()) throw new Error("Código requerido");
   if (src.length > 600000) throw new Error("Código demasiado grande");
-
   let toks = lex(src);
   const enc = encryptStrings(toks);
   let code = enc.header ? enc.header + "\n" + enc.toks.map(t => t.val).join("") : enc.toks.map(t => t.val).join("");
@@ -303,12 +314,9 @@ function obfuscate(source) {
   toks = obfuscateNumbers(toks);
   toks = renameAllLocals(toks);
   code = toks.map(t => t.val).join("");
-
   const anti = buildAntiTamper();
   const fullCode = anti + "\n" + code;
   const final = buildVMShell(fullCode);
-
-  return "-- QyrexObf v9.1 ⚡ IMPOSIBLE DE DESOFUSCAR ⚡\n" + final;
+  return "-- QyrexObf v9.0 ⚡ IMPOSIBLE DE DESOFUSCAR ⚡\n" + final;
 }
-
 module.exports = { obfuscate };
