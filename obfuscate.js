@@ -2,7 +2,9 @@
 const crypto = require("crypto");
 const KW = new Set(["and","break","do","else","elseif","end","false","for","function","goto","if","in","local","nil","not","or","repeat","return","then","true","until","while"]);
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const H = (n) => "0x" + ((n >>> 0) & 0xff).toString(16);
+// Do not truncate values here.  The previous byte mask made numeric expressions
+// above 255 evaluate to a different value than the original source.
+const H = (n) => "0x" + (Number(n) >>> 0).toString(16);
 
 function makeIdFactory() {
   const chars = "Il1O0abcdefghijklmnopqrstuvwxyz";
@@ -153,58 +155,45 @@ function obfuscateNumbers(toks) {
   return { toks: out, count };
 }
 
-function renameLocals(toks) {
-  const nextId = makeIdFactory();
-  const scopes = [new Map()];
-  const out = [];
-  let count = 0;
-  for (let i = 0; i < toks.length; i++) {
-    const t = toks[i];
-    if (t.type === "kw" && (t.val === "function" || t.val === "do" || t.val === "then" || t.val === "repeat")) {
-      scopes.push(new Map()); out.push(t); continue;
+/*
+ * The lexer intentionally drops whitespace and comments.  That is fine only if
+ * we put back a separator when two neighbouring tokens would otherwise become
+ * one token ("local" + "name" => "localname"), a comment ("-" + "-"), or
+ * an ambiguous number/concatenation expression.  Keeping this in one renderer
+ * makes every transformation use the same, syntax-safe output path.
+ */
+function renderTokens(toks) {
+  let code = "";
+  let previous = null;
+  for (const token of toks) {
+    if (previous) {
+      const a = previous.val;
+      const b = token.val;
+      const aLast = a[a.length - 1] || "";
+      const bFirst = b[0] || "";
+      const wordA = /[A-Za-z0-9_]/.test(aLast);
+      const wordB = /[A-Za-z0-9_]/.test(bFirst);
+      const needsWordSpace = wordA && wordB;
+      const needsCommentSpace = aLast === "-" && bFirst === "-";
+      const needsNumberSpace = previous.type === "num" && (bFirst === "." || bFirst === "e" || bFirst === "E");
+      if (needsWordSpace || needsCommentSpace || needsNumberSpace) code += " ";
     }
-    if (t.type === "kw" && t.val === "end") {
-      if (scopes.length > 1) scopes.pop();
-      out.push(t); continue;
-    }
-    if (t.type === "kw" && t.val === "local") {
-      out.push(t);
-      let j = i + 1;
-      if (j < toks.length && toks[j].type === "kw" && toks[j].val === "function") {
-        out.push(toks[j]); j++;
-        if (j < toks.length && toks[j].type === "id") {
-          const nn = nextId();
-          scopes[scopes.length - 1].set(toks[j].val, nn);
-          out.push({ type: "id", val: nn }); count++; j++;
-        }
-        i = j - 1; continue;
-      }
-      while (j < toks.length) {
-        const tj = toks[j];
-        if (tj.type === "id") {
-          const nn = nextId();
-          scopes[scopes.length - 1].set(tj.val, nn);
-          out.push({ type: "id", val: nn }); count++; j++; continue;
-        }
-        if (tj.val === "," || tj.val === "=") {
-          out.push(tj);
-          if (tj.val === "=") { j++; break; }
-          j++; continue;
-        }
-        break;
-      }
-      i = j - 1; continue;
-    }
-    if (t.type === "id") {
-      let found = null;
-      for (let s = scopes.length - 1; s >= 0; s--) {
-        if (scopes[s].has(t.val)) { found = scopes[s].get(t.val); break; }
-      }
-      out.push(found ? { type: "id", val: found } : t); continue;
-    }
-    out.push(t);
+    code += token.val;
+    previous = token;
   }
-  return { toks: out, count };
+  return code;
+}
+
+function renameLocals(toks) {
+  /*
+   * A lexer alone cannot rename Lua/Luau locals safely: declarations are not
+   * visible in their own RHS, function parameters introduce scopes, and a dot
+   * field is not an identifier reference.  The old implementation changed
+   * programs in all three cases.  The encrypted VM shell already removes the
+   * source identifiers from the delivered file, so preserve semantics here
+   * until this is backed by a real Lua/Luau AST parser.
+   */
+  return { toks, count: 0 };
 }
 
 function antiTamper() {
@@ -278,7 +267,7 @@ function obfuscate(source, opts) {
     const r = renameLocals(toks);
     toks = r.toks; localsRenamed = r.count || 0;
   }
-  let code = toks.map((t) => t.val).join("");
+  let code = renderTokens(toks);
   if (header) code = header + code;
   if (opts.antiTamper !== false) code = antiTamper() + "\n" + code;
   const final = vmShell(code);

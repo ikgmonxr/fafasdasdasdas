@@ -13,7 +13,8 @@ app.get("/api/health", (req, res) => res.json({ ok: true, service: "QyrexObf", v
 app.post("/api/obfuscate", (req, res) => {
   try {
     const code = (req.body && (req.body.code || req.body.source)) || "";
-    const opts = (req.body && req.body.options) || {};
+    const candidate = req.body && req.body.options;
+    const opts = candidate && typeof candidate === "object" && !Array.isArray(candidate) ? { ...candidate } : {};
     if (req.body && req.body.antiTamper === false) opts.antiTamper = false;
     if (!String(code).trim()) return res.status(400).json({ success: false, error: "code required" });
     const result = obfuscate(code, opts);
